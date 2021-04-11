@@ -165,7 +165,8 @@ if __name__ == '__main__':
     try:
         raw_df_test = pd.read_csv('../DataHacks-2021/Intermediate Track 1 (Bitcoin)/Datasets/bitcoin_test.csv')
         raw_df = pd.read_csv('../DataHacks-2021/Intermediate Track 1 (Bitcoin)/Datasets/bitcoin_train.csv')
-    except:
-        print("DATASETS AREN'T IN ../DataHacks-2021/Intermediate Track 1 (Bitcoin)/Datasets/bitcoin_*.csv'")
+    except FileNotFoundError as e:
+        print("\nERROR: DATASETS AREN'T IN ../DataHacks-2021/Intermediate Track 1 (Bitcoin)/Datasets/bitcoin_*.csv'\n")
+        raise e
 
     main()
