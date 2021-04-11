@@ -1,6 +1,6 @@
 # DataHacks2021: Bitcoin Ransomware Analysis
 
-Given a dataset of Bitcoin transactions, we have created a model to classify transactions into illicit (ransomware) or non-illict (white) categories. Furthermore, the model also classifies ransomeware transactions into the family the transaction most likely originated from.
+Given a dataset of Bitcoin transactions, we have created a model to classify transactions into illicit (ransomware) or non-illict (white) categories. Furthermore, upon identifying a ransomware transaction we were able to classify the transactions into the family it most likely originated from.
 
 ### Dependencies
 
