@@ -75,11 +75,12 @@ def standardize(feature):
     stdev = feature.std() # compute standard deviation
     return (feature - mu) / stdev
 
-def preprocessor(df):
+def preprocessor(df, test=False):
     # encode addresses and labels for ease of access
     le = preprocessing.LabelEncoder()
     df['address'] = le.fit_transform(df.address)
-    df['label'] = le.fit_transform(df.label)
+    if not test:
+        df['label'] = le.fit_transform(df.label)
     # sort values by date and reset index
     df['date'] = df.year + np.round(df.day / 365,3)
     df = df.sort_values(by='date').reset_index(drop=True)
@@ -87,14 +88,12 @@ def preprocessor(df):
     df['address_count'] = df.groupby('address')['address'].transform('size')
     # add cumulative count column, cumulative number of times address appears in the data
     df['address_cumcount'] = df.groupby('address').cumcount() # add cumuative address counts to dataframe
-    # add label cumcount
-    df['label_cumcount'] = df.groupby('label').cumcount() # add cumulative label counts to dataframe
     
     #standardize the data
     to_standardize = ['length','weight','count','looped','neighbors','income']
     standardized_features = df[to_standardize].apply(standardize)
     df = df.drop(to_standardize,axis=1).join(df[to_standardize].apply(standardize))
-    return df
+    return df, le
 
 
 

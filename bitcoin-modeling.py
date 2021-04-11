@@ -21,143 +21,216 @@ from utils import model_search, preprocessor, MasterModel
 
 def main():
     
-    print("Performing preprocessing and dataframe generation")
-    # year and date can be used for classifying families because our 
-    # model performs retroactive classification
     raw_df.drop(['Unnamed: 0'], axis=1, inplace=True)
     raw_df_test.drop(['Unnamed: 0'], axis=1, inplace=True)
     raw_df.sort_values(by=['year', 'day'], inplace=True)
     raw_df.reset_index(drop=True, inplace=True)
-    
-    df = preprocessor(raw_df)
 
-    features = [c for c in df.columns if c not in ['label']]
+    if not PROD:
+        print("Performing preprocessing and dataframe generation")
+        # year and date can be used for classifying families because our 
+        # model performs retroactive classification
+        
+        df = preprocessor(raw_df.copy(deep=True))
+        features = [c for c in df.columns if c not in ['label']]
 
-    # specify only working on classifying families given a transaction is ransomware
-    df_ransom = preprocessor(raw_df.loc[raw_df.label != 28])
-    # filter for families with more occurances than 4 to allow for cross validation
-    df_subset = df_ransom[~df_ransom.label.isin(df_ransom.label.value_counts()[df_ransom.label.value_counts()<=4].index.to_list())]
-    
-    testing_data = [{'param_dist': { 'objective': 'binary:logistic', 'verbosity':0, 'n_estimators':2},
-                'clf': xgb.XGBClassifier,
-                'name': 'xgb',
-                'ovr': True},
-                {'param_dist': {'objective':'multi:softmax', 'verbosity':0, 'num_class': 28, 'n_estimators':2},
-                'clf': xgb.XGBClassifier,
-                'name': 'xgb multi inherent',
-                'ovr': False},
-                {'param_dist': {'class_weight': 'balanced', },
-                'clf': ExtraTreesClassifier,
-                'name': 'et',
-                'ovr': False},
-                {'param_dist': {},
-                'clf': MLPClassifier,
-                'name': 'mlp',
-                'ovr': False},
-                {'param_dist': {'class_weight': 'balanced', },
-                'clf': RidgeClassifier,
-                'name': 'ridge',
-                'ovr': False},
-                {'param_dist': {},
-                'clf': KNeighborsClassifier,
-                'name': 'kneighbors',
-                'ovr': False},
-                {'param_dist': {'class_weight': 'balanced', },
-                'clf': SGDClassifier,
-                'name': 'sgd',
-                'ovr': False},
-                {'param_dist': {'class_weight': 'balanced', 'multi_class': 'ovr'},
-                'clf': LinearSVC,
-                'name': 'lsvc',
-                'ovr': False},
-               {'param_dist': {'class_weight': 'balanced', },
-                'clf': RandomForestClassifier,
-                'name': 'rf',
-                'ovr': True},
-               {'param_dist': {'class_weight': 'balanced', 'multi_class': 'ovr'},
-                'clf': LogisticRegression,
-                'name': 'lr ovr',
-                'ovr': False},
-                {'param_dist': {'class_weight': 'balanced', 'multi_class': 'multinomial'},
-                'clf': LogisticRegression,
-                'name': 'lr multiclass',
-                'ovr': False},]
+        # specify only working on classifying families given a transaction is ransomware
+        df_ransom = preprocessor(raw_df.loc[raw_df.label != 28].copy(deep=True))
+        # filter for families with more occurances than 4 to allow for cross validation
+        df_subset = df_ransom[~df_ransom.label.isin(df_ransom.label.value_counts()[df_ransom.label.value_counts()<=4].index.to_list())]
+        
+        
+        testing_data = [{'param_dist': { 'objective': 'binary:logistic', 'verbosity':0, 'n_estimators':2},
+                    'clf': xgb.XGBClassifier,
+                    'name': 'xgb',
+                    'ovr': True},
+                    {'param_dist': {'objective':'multi:softmax', 'verbosity':0, 'num_class': 28, 'n_estimators':2},
+                    'clf': xgb.XGBClassifier,
+                    'name': 'xgb multi inherent',
+                    'ovr': False},
+                    {'param_dist': {'class_weight': 'balanced', },
+                    'clf': ExtraTreesClassifier,
+                    'name': 'et',
+                    'ovr': False},
+                    {'param_dist': {},
+                    'clf': MLPClassifier,
+                    'name': 'mlp',
+                    'ovr': False},
+                    {'param_dist': {'class_weight': 'balanced', },
+                    'clf': RidgeClassifier,
+                    'name': 'ridge',
+                    'ovr': False},
+                    {'param_dist': {},
+                    'clf': KNeighborsClassifier,
+                    'name': 'kneighbors',
+                    'ovr': False},
+                    {'param_dist': {'class_weight': 'balanced', },
+                    'clf': SGDClassifier,
+                    'name': 'sgd',
+                    'ovr': False},
+                    {'param_dist': {'class_weight': 'balanced', 'multi_class': 'ovr'},
+                    'clf': LinearSVC,
+                    'name': 'lsvc',
+                    'ovr': False},
+                   {'param_dist': {'class_weight': 'balanced', },
+                    'clf': RandomForestClassifier,
+                    'name': 'rf',
+                    'ovr': True},
+                   {'param_dist': {'class_weight': 'balanced', 'multi_class': 'ovr'},
+                    'clf': LogisticRegression,
+                    'name': 'lr ovr',
+                    'ovr': False},
+                    {'param_dist': {'class_weight': 'balanced', 'multi_class': 'multinomial'},
+                    'clf': LogisticRegression,
+                    'name': 'lr multiclass',
+                    'ovr': False},]
+        print("|"*40)
+        print("Searching for best ransomware families classifier")
+        print("|"*40)
+        X = df_subset[features]
+        y = df_subset.label
 
-    print("|"*40)
-    print("Searching for best ransomware families classifier")
-    print("|"*40)
-    X = df_subset[features]
-    y = df_subset.label
+        X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0)
+        all_clfs, df_scores = model_search(X_train, X_test, y_train,  testing_data)
 
-    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0)
-    all_clfs, df_scores = model_search(X_train, X_test, y_train,  testing_data)
-    
-    print(df_scores)
-    
-    print("\n")
-    print("Generating final multiclass ransom family classifier (chosen from the highest performance...)")
-    # reinitialize X and y to include ALL ransom families
-    X = df_subset[features]
-    y = df_subset.label
+        print(df_scores)
 
-    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.40, random_state=22)
+        print("\n")
+        print("Generating final multiclass ransom family classifier (chosen from the highest performance...)")
+        # reinitialize X and y to include ALL ransom families
+        X = df_subset[features]
+        y = df_subset.label
 
-    multiclassClf = RandomForestClassifier
-    multiclassClf = multiclassClf(class_weight='balanced').fit(X_train, y_train)
-    # obtain class probabilities
-    y_prob = multiclassClf.predict_proba(X_test)
+        X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.40, random_state=22)
 
-    # score based on weighted roc auc
-    score = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovr')
+        multiclassClf = RandomForestClassifier
+        multiclassClf = multiclassClf(class_weight='balanced').fit(X_train, y_train)
+        # obtain class probabilities
+        y_prob = multiclassClf.predict_proba(X_test)
 
-    print("Random Forest roc auc wieghted score: ", score)
-    print("-"*40)
-    print("\nGenerating dictionary of known ransomware addresses...")
-    X = df[features]
-    y = df.label
+        # score based on weighted roc auc
+        score = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovr')
 
-    # manifest the dictionary of known addresses
-    dict_known_address = {}
+        print("Random Forest roc auc wieghted score: ", score)
+        print("-"*40)
+        print("\nGenerating dictionary of known ransomware addresses...")
+        X = df[features]
+        y = df.label
 
-    for i, row in df.iterrows():
-        if row.label != 28:
-            if row.address not in dict_known_address:
-                dict_known_address.update({row.address: row.label})
-    print("-"*40)
-    print("\nBuilding the binary classifier (whether or not a transaction is ransomware)")
-    binaryClf = RandomForestClassifier
+        # manifest the dictionary of known addresses
+        dict_known_address = {}
 
-    # reinitialize X and y to include ALL ransom families
-    X = df[features]
-    y = (df.label == 28).astype(int)
+        for i, row in df.iterrows():
+            if row.label != 28:
+                if row.address not in dict_known_address:
+                    dict_known_address.update({row.address: row.label})
+        print("-"*40)
+        print("\nBuilding the binary classifier (whether or not a transaction is ransomware)")
+        binaryClf = RandomForestClassifier
 
-    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.40, random_state=22)
+        # reinitialize X and y to include ALL ransom families
+        X = df[features]
+        y = (df.label == 28).astype(int)
 
-    binaryClf = RandomForestClassifier
-    binaryClf = binaryClf(class_weight='balanced').fit(X_train, y_train)
-    # obtain class probabilities
-    y_prob = binaryClf.predict_proba(X_test)[:, 1]
+        X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.40, random_state=22)
 
-    # score based on roc auc
-    score = roc_auc_score(y_test, y_prob)
+        binaryClf = RandomForestClassifier
+        binaryClf = binaryClf(class_weight='balanced').fit(X_train, y_train)
+        # obtain class probabilities
+#         y_prob = binaryClf.predict_proba(X_test)[:, 1]
 
-    print("Binary classifier roc auc score: ", score)
-    
-    print("-"*40)
-    print("\nTesting the MasterModel using the trained binaryClf and multiclassClf as well as the dictionary of known ransomware addresses")
+        # score based on roc auc
+#         score = roc_auc_score(y_test, y_prob)
 
-    X = df[features]
-    y = df.label
+#         print("Binary classifier roc auc score: ", score)
 
-    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0)
+        print("-"*40)
+        print("\nTesting the MasterModel using the trained binaryClf and multiclassClf as well as the dictionary of known ransomware addresses")
 
-    master = MasterModel(dict_known_address, binaryClf, multiclassClf)
+        X = df[features]
+        y = df.label
+
+        X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0)
+
+        master = MasterModel(dict_known_address, binaryClf, multiclassClf)
 
 
-    preds = master.predictions(X_test)
-    score = accuracy_score(y_test, preds)
-    print("Master model score: ", score)
-    
+        preds = master.predictions(X_test)
+        print(preds)
+        score = accuracy_score(y_test, preds)
+        print("Master model score: ", score)
+    else:
+        
+        print("\n Preprocessing")
+#         raw_both = raw_df.append(raw_df_test)
+#         df_both = preprocessor(raw_both.copy(deep=True), test=True)
+        
+#         df = df_both[~df_both.label.isna()]
+
+#         df_test = df_both[df_both.label.isna()].drop(['label'], 1)
+        
+#         label_encoder = preprocessing.LabelEncoder()
+#         df['label'] = label_encoder.fit_transform(df.label)
+        
+        df, label_encoder = preprocessor(raw_df.copy(deep=True))
+        features = [c for c in df.columns if c not in ['label']]
+
+        df_test, _ = preprocessor(raw_df_test.copy(deep=True), test=True)
+        
+        
+        # specify only working on classifying families given a transaction is ransomware
+        df_ransom, _ = preprocessor(raw_df.loc[raw_df.label != 'white'].copy(deep=True))
+        # filter for families with more occurances than 4 to allow for cross validation
+        df_subset = df_ransom[~df_ransom.label.isin(df_ransom.label.value_counts()[df_ransom.label.value_counts()<=4].index.to_list())]
+        
+        
+        print("\n")
+        print("Generating final multiclass ransom family classifier (chosen from the highest performance...)")
+        # reinitialize X and y to include ALL ransom families
+        X = df_subset[features]
+        y = df_subset.label
+
+
+        multiclassClf = RandomForestClassifier
+        multiclassClf = multiclassClf(class_weight='balanced').fit(X, y)
+        
+        print("-"*40)
+        print("\nGenerating dictionary of known ransomware addresses...")
+        X = df[features]
+        y = df.label
+
+        # manifest the dictionary of known addresses
+        dict_known_address = {}
+
+        for i, row in df.iterrows():
+            if row.label != 28:
+                if row.address not in dict_known_address:
+                    dict_known_address.update({row.address: row.label})
+        print("-"*40)
+        print("\nBuilding the binary classifier (whether or not a transaction is ransomware)")
+        binaryClf = RandomForestClassifier
+
+        # reinitialize X and y to include ALL ransom families
+        X = df[features]
+        y = (df.label == 28).astype(int)
+
+
+        binaryClf = RandomForestClassifier
+        binaryClf = binaryClf(class_weight='balanced').fit(X, y)
+
+
+        print("-"*40)
+        print("\nTesting the MasterModel using the trained binaryClf and multiclassClf as well as the dictionary of known ransomware addresses")
+        X = df_test[features]
+
+        master = MasterModel(dict_known_address, binaryClf, multiclassClf)
+
+        preds = master.predictions(X)
+        print(preds)
+        preds_labels = label_encoder.inverse_transform([int(i) for i in preds])
+        print(preds_labels)
+        df_preds = pd.DataFrame({'predictions':preds_labels})
+        df_preds.to_csv('./predictions.csv', index=False)
     
 
 if __name__ == '__main__':
@@ -168,5 +241,7 @@ if __name__ == '__main__':
     except FileNotFoundError as e:
         print("\nERROR: DATASETS AREN'T IN ../DataHacks-2021/Intermediate Track 1 (Bitcoin)/Datasets/bitcoin_*.csv'\n")
         raise e
-
+    
+    PROD = True
+    
     main()
