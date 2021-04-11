@@ -117,28 +117,22 @@ class MasterModel:
     
     
     def predictions(self, X):
-        ret = []
-        for i, row in X.iterrows():
-            ret.append(self.predict(row))
-            
+        ret = self.predict(X)
+        
         return ret
             
     
     def predict(self, X):
-        # if the address is in the dict of known addresses, return the label
-        if X[0] in self.dictKnownAddress:
-            return self.dictKnownAddress[X[0]]
         
-        binary_predict = self.binaryClf.predict([X])
+        df_preds = X.address.replace(self.dictKnownAddress)
+        df_preds.loc[df_preds.isin(self.dictKnownAddress)] = 0
         
-        # if it is ransomware
-        if binary_predict == 0:
-            # then return the mutliclass prediciton
-            label = self.multiclassClf.predict([X])
-            return label[0]
-        else:
-            return 28
+        # for all those not in the dictKnownAddress, replace with 0
+        # for all 0's binaryClf classify
+        df_preds[df_preds == 0] = self.binaryClf.predict(X[df_preds == 0]) 
+        df_preds.replace(1, 28)
         
+        # if it is still 0, it is ransomware, so familial classify
+        df_preds[df_preds == 0] = self.multiclassClf.predict(X[df_preds == 0])
         
-        
-    
+        return df_preds

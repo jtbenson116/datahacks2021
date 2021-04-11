@@ -222,13 +222,13 @@ def main():
         print("-"*40)
         print("\nTesting the MasterModel using the trained binaryClf and multiclassClf as well as the dictionary of known ransomware addresses")
         X = df_test[features]
-
+        y_train = df.label
         master = MasterModel(dict_known_address, binaryClf, multiclassClf)
-
-        preds = master.predictions(X)
+        print(y_train.value_counts())
+        preds = master.predictions(X).values.tolist()
         preds_labels = label_encoder.inverse_transform([int(i) for i in preds])
         df_preds = pd.DataFrame({'predictions':preds_labels})
-        df_preds.to_csv('./predictions.csv', index=False)
+        df_preds.to_csv('./predictions2.csv', index=False)
     
 
 if __name__ == '__main__':
