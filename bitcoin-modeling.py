@@ -226,9 +226,7 @@ def main():
         master = MasterModel(dict_known_address, binaryClf, multiclassClf)
 
         preds = master.predictions(X)
-        print(preds)
         preds_labels = label_encoder.inverse_transform([int(i) for i in preds])
-        print(preds_labels)
         df_preds = pd.DataFrame({'predictions':preds_labels})
         df_preds.to_csv('./predictions.csv', index=False)
     
