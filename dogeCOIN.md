@@ -1,35 +1,3 @@
-# DataHacks2021: Bitcoin Ransomware Analysis
-
-Given a dataset of Bitcoin transactions, we have created a model to classify transactions into illicit (ransomware) or non-illict (white) categories. Furthermore, upon identifying a ransomware transaction we were able to classify the transactions into the family it most likely originated from.
-
-### Dependencies
-
-- Pandas
-- NumPy/SciPy
-- SciKitLearn
-- MatPlotLib/Seaborn
-- XGBoost
-
-### Execution
-
-`python bitcoin-modeling.py` Will run the extent of our analysis. If the variable `PROD` is changed to `False`, it will run the training / testing analysis done in model selection. This will take longer.
-
-### Authors
-
-Jacob and Tyler Benson
-
-### References:
-
-> Akcora, C. G., Li, Y., Gel, Y. R., &amp; Kanatarcioglu, M. (n.d.). BitcoinHeist: Topological Data Analysis for Ransomware Detection on the Bitcoin Blockchain [PDF].
-
-> Lennon, H. (2021, January 20). The false narrative of bitcoin's role in illicit activity. Retrieved April 10, 2021, from https://www.forbes.com/sites/haileylennon/2021/01/19/the-false-narrative-of-bitcoins-role-in-illicit-activity/?sh=7d92ed423432
-
-> Team, C. (2021, January 19). Crypto crime Summarized: Scams and darknet markets DOMINATED 2020 by revenue, But ransomware is the bigger story. Retrieved April 10, 2021, from https://blog.chainalysis.com/reports/2021-crypto-crime-report-intro-ransomware-scams-darknet-markets
-
-
-# Our Report is Appended below
-
-
 ## Introduction
 
 Bitcoin was invented in 2008 by an unknown source under the pseudonym "Satoshi Nakamoto". It was designed to be a currency free from censorship and the blind trust that goes into conventional currencies. Satoshi intended to put that trust into the hands of the people, making the bitcoin network entirely peer-to-peer based with a universally distributed public ledger for transactions and no centralized authoritative figure. Both because of this and despite it, bitcoin quickly peaked the interest of those connected with illegal activities. Through bitcion, these activities could be funded with little to no fear of discovery by "laundering" the bitcoin through many channels. This makes it essentially impossible to trace back any one bitcoin user to a transaction made for illicit activities. Such groups began collecting money through bitcoin by infecting computers with viruses and demanding payment in return for access to their computer, known as ransomware. In this report we will attempt to distinguish ransomware transactions from 'white' or non-illicit transactions and classify the ransomware transactions into the different 'families' or groups instagating them.
