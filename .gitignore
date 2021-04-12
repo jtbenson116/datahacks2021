@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+*.ipynb
+*.csv
+.vscode
+node_modules/
+
+
