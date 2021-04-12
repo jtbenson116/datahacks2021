@@ -115,13 +115,6 @@ class MasterModel:
         self.binaryClf = binaryClf
         self.multiclassClf = multiclassClf
     
-    
-    def predictions(self, X):
-        ret = self.predict(X)
-        
-        return ret
-            
-    
     def predict(self, X):
         
         df_preds = X.address.map(self.dictKnownAddress)

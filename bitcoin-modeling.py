@@ -157,7 +157,7 @@ def main():
         master = MasterModel(dict_known_address, binaryClf, multiclassClf)
 
 
-        preds = master.predictions(X_test)
+        preds = master.predict(X_test)
         print(preds)
         score = accuracy_score(y_test, preds)
         print("Master model score: ", score)
@@ -237,7 +237,7 @@ def main():
         y_train = df.label
         master = MasterModel(dict_known_address, binaryClf, multiclassClf)
         print(y_train.value_counts())
-        preds = master.predictions(X).values.tolist()
+        preds = master.predict(X).values.tolist()
         preds_labels = label_encoder.inverse_transform([int(i) for i in preds])
         df_preds = pd.DataFrame({'predictions':preds_labels})
         df_preds.to_csv('./predictions2.csv', index=False)

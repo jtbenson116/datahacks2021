@@ -478,46 +478,28 @@ class MasterModel:
         self.binaryClf = binaryClf
         self.multiclassClf = multiclassClf
     
-    
-    def predictions(self, X):
-        ret = []
-        for i, row in X.iterrows():
-            ret.append(self.predict(row))
-            
-        return ret
-            
-    
     def predict(self, X):
-        # if the address is in the dict of known addresses, return the label
-        if X[0] in self.dictKnownAddress:
-            return self.dictKnownAddress[X[0]]
         
-        binary_predict = self.binaryClf.predict([X])
+        df_preds = X.address.map(self.dictKnownAddress)
         
-        # if it is ransomware
-        if binary_predict == 0:
-            # then return the mutliclass prediciton
-            label = self.multiclassClf.predict([X])
-            return label[0]
-        else:
-            return 28
+        # for all those not in the dictKnownAddress, replace with 0
+        # for all 0's binaryClf classify
+        df_preds[df_preds.isna()] = self.binaryClf.predict(X[df_preds.isna()]) 
+        df_preds.replace(1, 28) # 28 is the white label
+        
+        # if it is still 0, it is ransomware, so familial classify
+        df_preds[df_preds == 0] = self.multiclassClf.predict(X[df_preds == 0])
+        
+        return df_preds
 ```
 
 #### Generating the known address dictionary 
 
 
 ```python
-## 
-
-X = df[features]
-y = df.label
-
-dict_known_address = {}
-
-for i, row in df.iterrows():
-    if row.label != 28:
-        if row.address not in dict_known_address:
-            dict_known_address.update({row.address: row.label})
+known_trans = df[df.address.isin(df_test.address)][['address', 'label']].drop_duplicates()
+known_adds = known_trans.set_index('address')['label']
+dict_known_address = known_adds.to_dict()
 ```
 
 #### Generating the binary classifier
@@ -557,7 +539,7 @@ X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0
 master = MasterModel(dict_known_address, binaryClf, multiclassClf)
 
 
-preds = master.predictions(X_test)
+preds = master.predict(X_test)
 score = accuracy_score(y_test, preds)
 print("score: ", score)
 ```
