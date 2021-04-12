@@ -78,7 +78,7 @@ def standardize(feature):
 def preprocessor(df, test=False):
     # encode addresses and labels for ease of access
     le = preprocessing.LabelEncoder()
-    df['address'] = le.fit_transform(df.address)
+#     df['address'] = le.fit_transform(df.address)
     if not test:
         df['label'] = le.fit_transform(df.label)
     # sort values by date and reset index
@@ -124,12 +124,11 @@ class MasterModel:
     
     def predict(self, X):
         
-        df_preds = X.address.replace(self.dictKnownAddress)
-        df_preds.loc[df_preds.isin(self.dictKnownAddress)] = 0
+        df_preds = X.address.map(self.dictKnownAddress)
         
         # for all those not in the dictKnownAddress, replace with 0
         # for all 0's binaryClf classify
-        df_preds[df_preds == 0] = self.binaryClf.predict(X[df_preds == 0]) 
+        df_preds[df_preds.isna()] = self.binaryClf.predict(X[df_preds.isna()]) 
         df_preds.replace(1, 28)
         
         # if it is still 0, it is ransomware, so familial classify

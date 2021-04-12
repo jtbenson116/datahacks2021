@@ -32,6 +32,8 @@ def main():
         # model performs retroactive classification
         
         df = preprocessor(raw_df.copy(deep=True))
+        le = preprocessing.LabelEncoder()
+        df['address'] = le.fit_transform(df.address)
         features = [c for c in df.columns if c not in ['label']]
 
         # specify only working on classifying families given a transaction is ransomware
@@ -162,6 +164,7 @@ def main():
     else:
         
         print("\n Preprocessing")
+        
 #         raw_both = raw_df.append(raw_df_test)
 #         df_both = preprocessor(raw_both.copy(deep=True), test=True)
         
@@ -172,14 +175,25 @@ def main():
 #         label_encoder = preprocessing.LabelEncoder()
 #         df['label'] = label_encoder.fit_transform(df.label)
         
+        
+        # preprocess the data to include feature extraction and label encoding (test=False)
         df, label_encoder = preprocessor(raw_df.copy(deep=True))
-        features = [c for c in df.columns if c not in ['label']]
-
         df_test, _ = preprocessor(raw_df_test.copy(deep=True), test=True)
         
+        # append the data
+        df_both = df.append(df_test)
+        # encode the addresses
+        le = preprocessing.LabelEncoder()
+        df_both['address'] = le.fit_transform(df_both.address)
+        # split the data
+        df = df_both[~df_both.label.isna()]
+        df_test = df_both[df_both.label.isna()]
+        # get features 
+        features = [c for c in df.columns if c not in ['label']]
         
         # specify only working on classifying families given a transaction is ransomware
         df_ransom, _ = preprocessor(raw_df.loc[raw_df.label != 'white'].copy(deep=True))
+        df_ransom['address'] = le.transform(df_ransom.address)
         # filter for families with more occurances than 4 to allow for cross validation
         df_subset = df_ransom[~df_ransom.label.isin(df_ransom.label.value_counts()[df_ransom.label.value_counts()<=4].index.to_list())]
         
@@ -199,13 +213,11 @@ def main():
         X = df[features]
         y = df.label
 
-        # manifest the dictionary of known addresses
-        dict_known_address = {}
-
-        for i, row in df.iterrows():
-            if row.label != 28:
-                if row.address not in dict_known_address:
-                    dict_known_address.update({row.address: row.label})
+        # manifest the dictionary of known addresses        
+        known_trans = df[df.address.isin(df_test.address)][['address', 'label']].drop_duplicates()
+        known_adds = known_trans.set_index('address')['label']
+        dict_known_address = known_adds.to_dict()
+        
         print("-"*40)
         print("\nBuilding the binary classifier (whether or not a transaction is ransomware)")
         binaryClf = RandomForestClassifier
