@@ -31,13 +31,13 @@ def main():
         # year and date can be used for classifying families because our 
         # model performs retroactive classification
         
-        df = preprocessor(raw_df.copy(deep=True))
+        df, _ = preprocessor(raw_df.copy(deep=True))
         le = preprocessing.LabelEncoder()
         df['address'] = le.fit_transform(df.address)
         features = [c for c in df.columns if c not in ['label']]
 
         # specify only working on classifying families given a transaction is ransomware
-        df_ransom = preprocessor(raw_df.loc[raw_df.label != 28].copy(deep=True))
+        df_ransom, _ = preprocessor(raw_df.loc[raw_df.label != 28].copy(deep=True))
         # filter for families with more occurances than 4 to allow for cross validation
         df_subset = df_ransom[~df_ransom.label.isin(df_ransom.label.value_counts()[df_ransom.label.value_counts()<=4].index.to_list())]
         
@@ -93,7 +93,7 @@ def main():
         y = df_subset.label
 
         X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=0)
-        all_clfs, df_scores = model_search(X_train, X_test, y_train,  testing_data)
+        _, df_scores = model_search(X_train, X_test, y_train,  testing_data)
 
         print(df_scores)
 
@@ -122,7 +122,7 @@ def main():
         # manifest the dictionary of known addresses
         dict_known_address = {}
 
-        for i, row in df.iterrows():
+        for _, row in df.iterrows():
             if row.label != 28:
                 if row.address not in dict_known_address:
                     dict_known_address.update({row.address: row.label})
